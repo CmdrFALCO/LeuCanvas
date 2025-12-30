@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(npx mammoth:*)",
+      "Bash(npm run build:*)",
+      "Bash(timeout 15 npm run dev:*)",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(git config:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: SemantiCanvas - Visual knowledge canvas with semantic AI\n\nFeatures:\n- Full-screen tldraw canvas with custom IdeaCard shape\n- Client-side embedding generation using Xenova/all-MiniLM-L6-v2\n- Automatic duplicate/similar card detection with visual warnings\n- IndexedDB persistence for canvas state and vector index\n- Web Worker for non-blocking ML inference\n\nArchitecture:\n- Phase 1: Foundation \\(tldraw canvas, custom shapes, persistence\\)\n- Phase 2: Embedding Pipeline \\(Web Worker, queue system, progress UI\\)\n- Phase 3: Duplicate Detection \\(vector index, cosine similarity, warnings\\)\n\nTechnical Stack:\n- React 19 + TypeScript + Vite\n- tldraw v4 for infinite canvas\n- Zustand for vector index state\n- @xenova/transformers for embeddings\n- idb-keyval for IndexedDB persistence\nEOF\n\\)\")"
+    ]
+  }
+}
