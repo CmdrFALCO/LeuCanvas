@@ -1,3 +1,5 @@
 export { CONFIG } from './constants'
 export { embeddingPipeline, embedText } from './embeddings'
 export { cosineSimilarity, findSimilar, findAboveThreshold } from './similarity'
+export { callLLM, streamLLM, getStoredApiKey, setStoredApiKey, removeStoredApiKey } from './llm'
+export { retrieveContext, buildRAGMessages } from './rag'

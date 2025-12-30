@@ -1,5 +1,102 @@
 # Daily Progress Tracker
 
+## 2025-12-30 - Session 4: Phase 5 Quick Capture & Polish
+
+### Completed
+- [x] Created QuickCapture modal component with duplicate detection
+- [x] Integrated quick capture with Ctrl/Cmd+Shift+N hotkey
+- [x] Added keyboard navigation to SearchPanel (↑↓ + Enter)
+- [x] Fixed UI layout issues (search button, sidebar z-index)
+- [x] Moved Clear All button to bottom-right to avoid tldraw overlap
+
+### Files Created
+- `src/components/QuickCapture.tsx` - Quick capture modal with pre-creation duplicate warning
+
+### Files Modified
+- `src/App.tsx` - Added QuickCapture integration, moved search button to top:60
+- `src/components/index.ts` - Added QuickCapture export
+- `src/components/SearchPanel.tsx` - Added keyboard navigation (arrow keys + Enter)
+- `src/components/RelatedSidebar.tsx` - Added z-index:100 to all container variants
+
+### Features
+
+**Quick Capture Modal (F5)**
+- Global hotkey: Ctrl/Cmd+Shift+N
+- Title input (auto-focused) + Content textarea
+- Live duplicate detection as user types (debounced 500ms)
+- Shows warning with similar cards before creation
+- Click warning to navigate to existing card
+- Creates card at viewport center
+- Ctrl+Enter to create, Esc to cancel
+
+**Search Panel Improvements**
+- Arrow key navigation through results
+- Enter to select highlighted result
+- Mouse hover updates selection
+- Visual highlight for selected result (blue border)
+- Footer shows keyboard hints
+
+**Layout Fixes**
+- Search button moved to top:60 (below tldraw toolbar)
+- Clear All button moved to bottom-right
+- Sidebars have z-index:100 (above tldraw style panel)
+- Canvas container has overflow:hidden
+
+### Notes
+- Phase 5 (final phase) is now complete
+- All core features implemented: canvas, embedding, duplicate detection, search, related cards, quick capture
+- App is ready for production use
+
+---
+
+## 2025-12-30 - Session 3: Phase 4 Search & Discovery
+
+### Completed
+- [x] Created SearchPanel component with semantic search
+- [x] Created RelatedSidebar component for related cards
+- [x] Created useHotkeys hook for keyboard shortcuts
+- [x] Implemented three-column layout (Search | Canvas | Related)
+- [x] Added Ctrl+K / Cmd+K shortcut to toggle search panel
+- [x] Added search button in toolbar when search panel is closed
+
+### Files Created
+- `src/components/SearchPanel.tsx` - Semantic search panel with debounced embedding
+- `src/components/RelatedSidebar.tsx` - Shows top-5 related cards for selected card
+- `src/hooks/useHotkeys.ts` - Keyboard shortcut handler
+
+### Files Modified
+- `src/App.tsx` - Three-column layout, search/sidebar state, hotkeys integration
+- `src/components/index.ts` - Added SearchPanel and RelatedSidebar exports
+- `src/hooks/index.ts` - Added useHotkeys export
+- `src/hooks/usePersistence.ts` - Fixed TypeScript error with store type casting
+
+### Features
+
+**Semantic Search (F4)**
+- Left sidebar panel toggled with Ctrl/Cmd+K
+- Debounced search input (300ms)
+- Embeds query text using same model as cards
+- Shows top-10 results with similarity scores
+- Click result to navigate and select card
+- Color-coded similarity: red (>92%), orange (85-92%), green (70-85%)
+
+**Related Cards Sidebar (F6)**
+- Right sidebar visible when IdeaCard is selected
+- Shows top-5 semantically related cards above 70% similarity
+- Updates when selection changes
+- Click to navigate to related card
+- Collapsible with toggle button
+
+**Keyboard Shortcuts**
+- `Ctrl/Cmd+K` - Toggle search panel
+- `Ctrl/Cmd+Shift+N` - Quick capture (Phase 5 stub)
+
+### Next Steps
+- Phase 5: Quick Capture (global shortcut, quick input dialog)
+- Phase 6: Polish & Performance
+
+---
+
 ## 2025-12-30 - Session 2: UI Polish & Bug Fixes
 
 ### Completed

@@ -4,8 +4,9 @@ import type { TLComponents, Editor, TLUiOverrides } from 'tldraw'
 import 'tldraw/tldraw.css'
 import { IdeaCardUtil } from './shapes'
 import { IdeaCardTool } from './tools'
-import { usePersistence, useEmbedding, useModelLoader, useDuplicateCheck } from './hooks'
+import { usePersistence, useEmbedding, useModelLoader, useDuplicateCheck, useHotkeys } from './hooks'
 import { useVectorIndexSync } from './store'
+import { SearchPanel, RelatedSidebar, QuickCapture, ChatPanel, ApiSettings } from './components'
 
 // Confirmation dialog component
 function ConfirmDialog({
@@ -87,7 +88,7 @@ function ConfirmDialog({
   )
 }
 
-// Clear canvas button component
+// Clear canvas button component - positioned bottom-right to avoid tldraw's style panel
 function ClearCanvasButton({ onClick }: { onClick: () => void }) {
   return (
     <button
@@ -95,7 +96,7 @@ function ClearCanvasButton({ onClick }: { onClick: () => void }) {
       title="Clear all cards"
       style={{
         position: 'absolute',
-        top: 12,
+        bottom: 12,
         right: 12,
         padding: '8px 12px',
         borderRadius: 6,
@@ -249,8 +250,34 @@ function ModelStatus({
 function App() {
   const [editor, setEditor] = useState<Editor | null>(null)
   const [showClearDialog, setShowClearDialog] = useState(false)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [isRelatedCollapsed, setIsRelatedCollapsed] = useState(false)
+  const [isQuickCaptureOpen, setIsQuickCaptureOpen] = useState(false)
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  const [isApiSettingsOpen, setIsApiSettingsOpen] = useState(false)
   const { isLoading: isPersistenceLoading, clearAll } = usePersistence(editor)
   const { isLoading: isModelLoading, progress, status } = useModelLoader()
+
+  // Toggle search panel
+  const toggleSearch = useCallback(() => {
+    setIsSearchOpen((prev) => !prev)
+  }, [])
+
+  // Toggle related sidebar
+  const toggleRelatedCollapse = useCallback(() => {
+    setIsRelatedCollapsed((prev) => !prev)
+  }, [])
+
+  // Toggle quick capture modal
+  const handleQuickCapture = useCallback(() => {
+    setIsQuickCaptureOpen(true)
+  }, [])
+
+  // Register hotkeys
+  useHotkeys({
+    onToggleSearch: toggleSearch,
+    onQuickCapture: handleQuickCapture,
+  })
 
   const handleClearClick = useCallback(() => {
     setShowClearDialog(true)
@@ -300,7 +327,7 @@ function App() {
   const showFullOverlay = isPersistenceLoading || (isModelLoading && progress < 10)
 
   return (
-    <div style={{ position: 'fixed', inset: 0 }}>
+    <div style={{ position: 'fixed', inset: 0, display: 'flex' }}>
       <style>
         {`
           @keyframes pulse {
@@ -309,29 +336,128 @@ function App() {
           }
         `}
       </style>
-      <Tldraw
-        shapeUtils={customShapes}
-        tools={customTools}
-        components={components}
-        overrides={overrides}
-        onMount={handleMount}
+
+      {/* Left sidebar: Search Panel */}
+      <SearchPanel
+        editor={editor}
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
       />
-      {showFullOverlay && (
-        <LoadingOverlay
-          message={isPersistenceLoading ? 'Loading canvas...' : 'Loading AI model...'}
-          progress={isPersistenceLoading ? undefined : progress}
+
+      {/* Center: Canvas - overflow hidden to contain tldraw UI within bounds */}
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+        <Tldraw
+          shapeUtils={customShapes}
+          tools={customTools}
+          components={components}
+          overrides={overrides}
+          onMount={handleMount}
+        />
+        {showFullOverlay && (
+          <LoadingOverlay
+            message={isPersistenceLoading ? 'Loading canvas...' : 'Loading AI model...'}
+            progress={isPersistenceLoading ? undefined : progress}
+          />
+        )}
+        {!showFullOverlay && isModelLoading && (
+          <ModelStatus isLoading={isModelLoading} status={status} />
+        )}
+        {!showFullOverlay && <ClearCanvasButton onClick={handleClearClick} />}
+        {!showFullOverlay && !isChatOpen && (
+          <button
+            onClick={() => setIsChatOpen(true)}
+            style={{
+              position: 'absolute',
+              top: 60,
+              right: 12,
+              padding: '8px 12px',
+              borderRadius: 6,
+              border: '1px solid #e5e5e5',
+              backgroundColor: 'white',
+              cursor: 'pointer',
+              fontSize: 12,
+              fontWeight: 500,
+              color: '#666',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              zIndex: 999,
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+            }}
+            title="AI Chat"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            Chat
+          </button>
+        )}
+        {!showFullOverlay && !isSearchOpen && (
+          <button
+            onClick={toggleSearch}
+            style={{
+              position: 'absolute',
+              top: 60,
+              left: 12,
+              padding: '8px 12px',
+              borderRadius: 6,
+              border: '1px solid #e5e5e5',
+              backgroundColor: 'white',
+              cursor: 'pointer',
+              fontSize: 12,
+              fontWeight: 500,
+              color: '#666',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              zIndex: 999,
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+            }}
+            title="Search (Ctrl+K)"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+            Search
+          </button>
+        )}
+      </div>
+
+      {/* Right panel: Chat */}
+      <ChatPanel
+        editor={editor}
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        onOpenSettings={() => setIsApiSettingsOpen(true)}
+      />
+
+      {/* Right sidebar: Related Cards (only show when chat is closed) */}
+      {!isChatOpen && (
+        <RelatedSidebar
+          editor={editor}
+          isCollapsed={isRelatedCollapsed}
+          onToggleCollapse={toggleRelatedCollapse}
         />
       )}
-      {!showFullOverlay && isModelLoading && (
-        <ModelStatus isLoading={isModelLoading} status={status} />
-      )}
-      {!showFullOverlay && <ClearCanvasButton onClick={handleClearClick} />}
+
       <ConfirmDialog
         isOpen={showClearDialog}
         title="Clear Canvas"
         message="Clear all cards? This will delete all idea cards and their embeddings. This cannot be undone."
         onConfirm={handleClearConfirm}
         onCancel={handleClearCancel}
+      />
+
+      <QuickCapture
+        editor={editor}
+        isOpen={isQuickCaptureOpen}
+        onClose={() => setIsQuickCaptureOpen(false)}
+      />
+
+      <ApiSettings
+        isOpen={isApiSettingsOpen}
+        onClose={() => setIsApiSettingsOpen(false)}
       />
     </div>
   )

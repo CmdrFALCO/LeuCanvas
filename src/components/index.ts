@@ -1,1 +1,6 @@
 export { DuplicateWarning, getDuplicateBorderStyle } from './DuplicateWarning'
+export { SearchPanel } from './SearchPanel'
+export { RelatedSidebar } from './RelatedSidebar'
+export { QuickCapture } from './QuickCapture'
+export { ChatPanel } from './ChatPanel'
+export { ApiSettings } from './ApiSettings'

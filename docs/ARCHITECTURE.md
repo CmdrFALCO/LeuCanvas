@@ -17,6 +17,7 @@ semanticanvas/
 │   │   ├── useEmbedding.ts      # Auto-embed cards
 │   │   ├── useModelLoader.ts    # Model loading state
 │   │   ├── useDuplicateCheck.ts # Duplicate detection
+│   │   ├── useHotkeys.ts        # Keyboard shortcuts
 │   │   └── index.ts
 │   ├── workers/             # Web Workers
 │   │   └── embedding.worker.ts  # Embedding generation
@@ -30,6 +31,9 @@ semanticanvas/
 │   │   └── index.ts
 │   ├── components/          # React components
 │   │   ├── DuplicateWarning.tsx # Warning tooltip
+│   │   ├── SearchPanel.tsx      # Semantic search sidebar
+│   │   ├── RelatedSidebar.tsx   # Related cards sidebar
+│   │   ├── QuickCapture.tsx     # Quick capture modal
 │   │   └── index.ts
 │   ├── types/               # TypeScript types
 │   │   └── index.ts             # Shared interfaces
@@ -312,10 +316,105 @@ function isValidSnapshot(snapshot): boolean {
 }
 ```
 
-## Future Architecture (Planned)
+## Search & Discovery (Phase 4)
 
-### Search & Discovery (Phase 4)
-- Semantic search panel with query embedding
-- Related cards sidebar for selected card
-- Click-to-navigate functionality
-- Keyboard shortcut: Cmd/Ctrl+K
+### App Layout
+```
+┌──────────────────────────────────────────────────────────────┐
+│                         Fixed Full-screen                     │
+├───────────────┬──────────────────────────────┬───────────────┤
+│  SearchPanel  │                              │ RelatedSidebar│
+│   (toggle)    │        tldraw Canvas         │  (collapse)   │
+│   width:320   │           flex: 1            │   width:280   │
+│               │                              │               │
+│  - Input      │                              │  - Selected   │
+│  - Results    │                              │  - Top 5      │
+│               │                              │    related    │
+└───────────────┴──────────────────────────────┴───────────────┘
+```
+
+### Components
+
+**SearchPanel.tsx**
+- Left sidebar, 320px wide
+- Hidden by default, toggle with Ctrl/Cmd+K
+- Debounced search input (300ms)
+- Embeds query using EmbeddingPipeline
+- Calls `findSimilar()` for top-10 results
+- Shows: title, preview, similarity percentage
+- Click result → `editor.select()` + `editor.zoomToSelection()`
+
+**RelatedSidebar.tsx**
+- Right sidebar, 280px wide (40px when collapsed)
+- Visible when IdeaCard selected
+- Gets embedding from selected card's meta
+- Calls `findSimilar()` for top-5 above RELATED_THRESHOLD
+- Updates on selection change and card content change
+- Click to navigate to related card
+
+**useHotkeys.ts**
+- Global keyboard listener
+- Detects Mac vs Windows for modifier key
+- `Ctrl/Cmd+K` → toggle search panel
+- `Ctrl/Cmd+Shift+N` → quick capture (Phase 5 stub)
+
+### Configuration
+```typescript
+const CONFIG = {
+  SEARCH_TOP_K: 10,          // Max search results
+  RELATED_TOP_K: 5,          // Max related cards
+  RELATED_THRESHOLD: 0.70,   // Min similarity for related
+}
+```
+
+### Color Coding
+| Similarity | Color | Meaning |
+|------------|-------|---------|
+| ≥ 92% | Red (#dc2626) | Duplicate |
+| ≥ 85% | Orange (#f59e0b) | Similar |
+| ≥ 70% | Green (#10b981) | Related |
+| < 70% | Gray (#6b7280) | Low match |
+
+## Quick Capture (Phase 5)
+
+### QuickCapture.tsx
+- Modal overlay triggered by Ctrl/Cmd+Shift+N
+- Title input (auto-focused) + Content textarea
+- Live duplicate detection during input (debounced 500ms)
+- Embeds combined text to check for similar existing cards
+- Shows warning banner if similarity ≥ 85%
+- Warning includes clickable links to navigate to similar cards
+- Creates IdeaCard at viewport center using `editor.getViewportScreenCenter()`
+- Keyboard: Ctrl+Enter to create, Esc to cancel
+
+### Flow
+```
+┌─────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   Hotkey    │────▶│  QuickCapture    │────▶│  Create Shape   │
+│ Ctrl+Shift+N│     │  Modal Opens     │     │  at Center      │
+└─────────────┘     └────────┬─────────┘     └─────────────────┘
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │  Debounced       │
+                    │  Duplicate Check │
+                    │  (500ms)         │
+                    └────────┬─────────┘
+                             │
+                   ┌─────────┴─────────┐
+                   ▼                   ▼
+          ┌───────────────┐   ┌───────────────┐
+          │  No Matches   │   │  Show Warning │
+          │  (create OK)  │   │  (can still   │
+          └───────────────┘   │   create)     │
+                              └───────────────┘
+```
+
+## Future Enhancements
+
+### Potential Features
+- Card color picker during creation/editing
+- Bulk card import/export (JSON, Markdown)
+- Collaboration (WebSocket sync)
+- Card templates
+- Tags/categories with filtering

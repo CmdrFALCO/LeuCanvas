@@ -47,9 +47,9 @@ export function usePersistence(editor: Editor | null) {
             currentEditor.loadSnapshot(snapshot)
 
             // Sync check: count IdeaCards in snapshot vs vector index
-            const ideaCardCount = Object.keys(snapshot.store).filter(
-              (key) => key.startsWith('shape:') &&
-                (snapshot.store[key] as { type?: string })?.type === 'idea-card'
+            const storeRecord = snapshot.store as Record<string, { type?: string }>
+            const ideaCardCount = Object.keys(storeRecord).filter(
+              (key) => key.startsWith('shape:') && storeRecord[key]?.type === 'idea-card'
             ).length
 
             // If canvas is empty but vector index might have stale entries, clear it
