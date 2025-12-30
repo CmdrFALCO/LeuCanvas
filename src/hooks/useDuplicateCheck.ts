@@ -45,8 +45,11 @@ export function useDuplicateCheck(editor: Editor | null) {
               // Mark as checked
               checkedEmbeddings.current.set(shape.id, meta.embeddedAt!)
 
-              // Perform duplicate check
-              checkForDuplicates(shape, meta.embedding!)
+              // Delay duplicate check to ensure vector index is synced first
+              // (both hooks listen to same store, order isn't guaranteed)
+              setTimeout(() => {
+                checkForDuplicates(shape, meta.embedding!)
+              }, 0)
             }
           }
         }
@@ -58,8 +61,13 @@ export function useDuplicateCheck(editor: Editor | null) {
       const queryVector = new Float32Array(embedding)
       const allEntries = getAllEntries()
 
+      console.log('[DuplicateCheck] Checking card:', shape.id)
+      console.log('[DuplicateCheck] Vector index entries:', allEntries.length)
+      console.log('[DuplicateCheck] Entry IDs:', allEntries.map(e => e.id))
+
       // Find similar cards (top 1 is enough for duplicate detection)
       const similar = findSimilar(queryVector, allEntries, 1, shape.id)
+      console.log('[DuplicateCheck] Similar results:', similar)
 
       if (similar.length === 0) {
         // No similar cards found, clear any existing duplicate info
@@ -83,6 +91,20 @@ export function useDuplicateCheck(editor: Editor | null) {
 
     function updateDuplicateInfo(shape: IdeaCardShape, duplicateOfId: string, score: number) {
       if (!editor) return
+
+      // Safety check: never mark a card as duplicate of itself
+      const isSelfMatch = String(shape.id) === String(duplicateOfId)
+      console.log('[DuplicateCheck] Setting duplicate info:', {
+        cardId: shape.id,
+        duplicateOf: duplicateOfId,
+        score: score,
+        isSelfMatch,
+      })
+
+      if (isSelfMatch) {
+        console.warn('[DuplicateCheck] BUG: Attempted self-match, skipping')
+        return
+      }
 
       const currentMeta = (editor.getShape(shape.id)?.meta ?? {}) as Partial<IdeaCardMeta>
 

@@ -34,6 +34,9 @@ export function findSimilar(
   topK: number,
   excludeId?: string
 ): SimilarityResult[] {
+  console.log('[findSimilar] Called with excludeId:', excludeId)
+  console.log('[findSimilar] Index has', index.length, 'entries')
+
   if (query.length === 0 || index.length === 0) {
     return []
   }
@@ -42,8 +45,14 @@ export function findSimilar(
   const results: SimilarityResult[] = []
 
   for (const entry of index) {
-    // Skip the query card itself
-    if (excludeId && entry.id === excludeId) {
+    // Skip the query card itself - use String() to ensure consistent comparison
+    // (TLShapeId is a branded string type, this ensures we compare raw strings)
+    const entryIdStr = String(entry.id)
+    const excludeIdStr = excludeId ? String(excludeId) : null
+    const isMatch = excludeIdStr !== null && entryIdStr === excludeIdStr
+    console.log('[findSimilar] Comparing:', { entryId: entryIdStr, excludeId: excludeIdStr, isMatch })
+    if (isMatch) {
+      console.log('[findSimilar] SKIPPING self-match')
       continue
     }
 

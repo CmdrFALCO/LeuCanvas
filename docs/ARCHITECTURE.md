@@ -80,11 +80,55 @@ interface IdeaCardMeta {
 
 ### Features
 - Extends `BaseBoxShapeUtil` for box-based behavior
-- Editable via double-click
+- Editable via double-click (explicit `onDoubleClick` handler)
 - Resizable with minimum dimensions
 - Sticky-note visual style
 - Visual embedding status indicators
 - Duplicate/similar warning with navigation
+
+## Custom Tool Registration (tldraw v4)
+
+In tldraw v4, custom tools require TWO registrations:
+
+### 1. Behavior Registration (`tools` prop)
+```typescript
+const customTools = [IdeaCardTool]  // StateNode class
+
+<Tldraw tools={customTools} />
+```
+
+### 2. UI Registration (`overrides` prop)
+```typescript
+const overrides: TLUiOverrides = {
+  tools(editor, tools) {
+    tools['idea-card'] = {
+      id: 'idea-card',
+      icon: 'tool-note',
+      label: 'Idea Card',
+      kbd: 'i',  // Keyboard shortcut
+      onSelect: () => editor.setCurrentTool('idea-card'),
+    }
+    return tools
+  },
+}
+
+<Tldraw overrides={overrides} />
+```
+
+### 3. Toolbar Display (`components` prop)
+```typescript
+function CustomToolbar() {
+  const tools = useTools()
+  return (
+    <DefaultToolbar>
+      <TldrawUiMenuItem {...tools['idea-card']} />
+      <DefaultToolbarContent />
+    </DefaultToolbar>
+  )
+}
+
+<Tldraw components={{ Toolbar: CustomToolbar }} />
+```
 
 ## Embedding Pipeline
 
@@ -219,6 +263,30 @@ const CONFIG = {
 - **URL Reset**: Add `?reset` to URL to clear all stored data
 - **Snapshot Validation**: Invalid snapshots are auto-detected and cleared
 - **Graceful Degradation**: Corrupted data triggers fresh start instead of crash
+- **Clear Canvas Button**: UI button to reset all data with confirmation
+
+### Data Sync
+On app load, the persistence layer ensures canvas and vector index stay in sync:
+- If canvas is empty (0 IdeaCards) → clear vector index
+- If snapshot is corrupted → clear both canvas and vector index
+- If no snapshot exists → clear vector index
+- Prevents stale vector entries from causing false duplicate matches
+
+### Clear All Flow
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│  Clear Button   │────▶│  Confirm Dialog  │────▶│   clearAll()    │
+│  (top-right)    │     │  (Cancel/Clear)  │     │                 │
+└─────────────────┘     └──────────────────┘     └────────┬────────┘
+                                                          │
+         ┌────────────────────────────────────────────────┼────────────────────────┐
+         │                                                │                        │
+         ▼                                                ▼                        ▼
+┌─────────────────┐                              ┌─────────────────┐      ┌─────────────────┐
+│  Delete shapes  │                              │  Clear IndexedDB│      │  Clear Zustand  │
+│  from editor    │                              │  (both keys)    │      │  vector index   │
+└─────────────────┘                              └─────────────────┘      └─────────────────┘
+```
 
 ## Error Handling
 

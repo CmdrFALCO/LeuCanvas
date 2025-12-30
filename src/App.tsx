@@ -1,11 +1,136 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { Tldraw, DefaultToolbar, TldrawUiMenuItem, useTools, DefaultToolbarContent } from 'tldraw'
-import type { TLComponents, Editor } from 'tldraw'
+import type { TLComponents, Editor, TLUiOverrides } from 'tldraw'
 import 'tldraw/tldraw.css'
 import { IdeaCardUtil } from './shapes'
 import { IdeaCardTool } from './tools'
 import { usePersistence, useEmbedding, useModelLoader, useDuplicateCheck } from './hooks'
 import { useVectorIndexSync } from './store'
+
+// Confirmation dialog component
+function ConfirmDialog({
+  isOpen,
+  title,
+  message,
+  onConfirm,
+  onCancel,
+}: {
+  isOpen: boolean
+  title: string
+  message: string
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  if (!isOpen) return null
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        zIndex: 2000,
+      }}
+      onClick={onCancel}
+    >
+      <div
+        style={{
+          backgroundColor: 'white',
+          borderRadius: 12,
+          padding: 24,
+          maxWidth: 400,
+          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.2)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 style={{ margin: '0 0 12px', fontSize: 18, fontWeight: 600, color: '#333' }}>
+          {title}
+        </h3>
+        <p style={{ margin: '0 0 20px', fontSize: 14, color: '#666', lineHeight: 1.5 }}>
+          {message}
+        </p>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '8px 16px',
+              borderRadius: 6,
+              border: '1px solid #ddd',
+              backgroundColor: 'white',
+              cursor: 'pointer',
+              fontSize: 14,
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              padding: '8px 16px',
+              borderRadius: 6,
+              border: 'none',
+              backgroundColor: '#ef4444',
+              color: 'white',
+              cursor: 'pointer',
+              fontSize: 14,
+              fontWeight: 500,
+            }}
+          >
+            Clear All
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Clear canvas button component
+function ClearCanvasButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      title="Clear all cards"
+      style={{
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        padding: '8px 12px',
+        borderRadius: 6,
+        border: '1px solid #e5e5e5',
+        backgroundColor: 'white',
+        cursor: 'pointer',
+        fontSize: 12,
+        fontWeight: 500,
+        color: '#666',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        zIndex: 999,
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+        transition: 'all 0.15s ease',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = '#fef2f2'
+        e.currentTarget.style.borderColor = '#fecaca'
+        e.currentTarget.style.color = '#dc2626'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = 'white'
+        e.currentTarget.style.borderColor = '#e5e5e5'
+        e.currentTarget.style.color = '#666'
+      }}
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <polyline points="3 6 5 6 21 6" />
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      </svg>
+      Clear All
+    </button>
+  )
+}
 
 // Custom shapes array
 const customShapes = [IdeaCardUtil]
@@ -123,8 +248,41 @@ function ModelStatus({
 
 function App() {
   const [editor, setEditor] = useState<Editor | null>(null)
-  const { isLoading: isPersistenceLoading } = usePersistence(editor)
+  const [showClearDialog, setShowClearDialog] = useState(false)
+  const { isLoading: isPersistenceLoading, clearAll } = usePersistence(editor)
   const { isLoading: isModelLoading, progress, status } = useModelLoader()
+
+  const handleClearClick = useCallback(() => {
+    setShowClearDialog(true)
+  }, [])
+
+  const handleClearConfirm = useCallback(async () => {
+    await clearAll()
+    setShowClearDialog(false)
+  }, [clearAll])
+
+  const handleClearCancel = useCallback(() => {
+    setShowClearDialog(false)
+  }, [])
+
+  // Define UI overrides for custom tools
+  const overrides = useMemo<TLUiOverrides>(
+    () => ({
+      tools(editor, tools) {
+        tools['idea-card'] = {
+          id: 'idea-card',
+          icon: 'tool-note',
+          label: 'Idea Card',
+          kbd: 'i',
+          onSelect: () => {
+            editor.setCurrentTool('idea-card')
+          },
+        }
+        return tools
+      },
+    }),
+    []
+  )
 
   // Enable embedding generation when editor is ready
   useEmbedding(editor)
@@ -155,6 +313,7 @@ function App() {
         shapeUtils={customShapes}
         tools={customTools}
         components={components}
+        overrides={overrides}
         onMount={handleMount}
       />
       {showFullOverlay && (
@@ -166,6 +325,14 @@ function App() {
       {!showFullOverlay && isModelLoading && (
         <ModelStatus isLoading={isModelLoading} status={status} />
       )}
+      {!showFullOverlay && <ClearCanvasButton onClick={handleClearClick} />}
+      <ConfirmDialog
+        isOpen={showClearDialog}
+        title="Clear Canvas"
+        message="Clear all cards? This will delete all idea cards and their embeddings. This cannot be undone."
+        onConfirm={handleClearConfirm}
+        onCancel={handleClearCancel}
+      />
     </div>
   )
 }

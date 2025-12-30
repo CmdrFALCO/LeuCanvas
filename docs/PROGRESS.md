@@ -1,6 +1,62 @@
 # Daily Progress Tracker
 
-## 2025-12-30 - Bug Fixes & Stability
+## 2025-12-30 - Session 2: UI Polish & Bug Fixes
+
+### Completed
+- [x] Fixed IdeaCard tool not appearing in toolbar (missing `overrides` prop)
+- [x] Fixed double-click to edit not working (event propagation issue)
+- [x] Fixed duplicate detection self-matching bug (card matching itself)
+- [x] Added Clear Canvas button with confirmation dialog
+- [x] Added canvas/vector index sync on load (prevents stale data)
+- [x] Added debug logging for duplicate detection pipeline
+
+### Files Modified
+- `src/App.tsx` - Added UI overrides for IdeaCard tool, Clear Canvas button, ConfirmDialog component
+- `src/shapes/IdeaCardUtil.tsx` - Added `onDoubleClick` handler, conditional event propagation
+- `src/hooks/usePersistence.ts` - Added `clearAll()` function, canvas/vector sync on load
+- `src/hooks/useDuplicateCheck.ts` - Added setTimeout for race condition, self-match safety check
+- `src/lib/similarity.ts` - Added explicit String() comparison for ID matching
+- `src/store/useVectorIndex.ts` - Added debug logging
+
+### Bug Fixes Detail
+
+**IdeaCard Tool Not in Toolbar**
+- Root cause: tldraw v4 requires both `tools` prop (behavior) AND `overrides` prop (UI)
+- Fix: Added `overrides` with `tools()` function defining icon, label, keyboard shortcut
+
+**Double-Click Edit Not Working**
+- Root cause: `onPointerDown={stopEventPropagation}` blocked all events including double-click
+- Fix: Made event propagation conditional (`isEditing ? stopEventPropagation : undefined`)
+- Fix: Added explicit `onDoubleClick` handler calling `editor.setEditingShape()`
+
+**Duplicate Self-Matching**
+- Root cause: Race condition between vector index sync and duplicate check
+- Fix: Added `setTimeout(0)` to defer duplicate check until after index sync
+- Fix: Added safety check in `updateDuplicateInfo()` to reject self-matches
+- Fix: Added explicit `String()` conversion for ID comparison
+
+### New Features
+
+**Clear Canvas Button**
+- Location: Top-right corner (floating button)
+- Hover effect: Turns red to indicate destructive action
+- Confirmation dialog with Cancel/Clear All buttons
+- Clears: All IdeaCard shapes, IndexedDB snapshot, vector index
+
+**Canvas/Vector Index Sync**
+- On load: If canvas is empty, vector index is cleared
+- On load: If snapshot is corrupted, both are cleared
+- On load: If no snapshot exists, vector index is cleared
+- Prevents stale vector entries from previous sessions
+
+### Notes
+- Press `i` to activate IdeaCard tool (keyboard shortcut)
+- Debug logs prefixed with `[VectorIndex]`, `[DuplicateCheck]`, `[findSimilar]`
+- Clear All also saves empty state to prevent reload issues
+
+---
+
+## 2025-12-30 - Session 1: Bug Fixes & Stability
 
 ### Completed
 - [x] Fixed TypeScript build errors for tldraw v4 API changes

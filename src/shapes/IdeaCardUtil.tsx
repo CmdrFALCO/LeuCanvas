@@ -38,6 +38,10 @@ export class IdeaCardUtil extends BaseBoxShapeUtil<IdeaCardShapeType> {
     return true
   }
 
+  override onDoubleClick(shape: IdeaCardShapeType) {
+    this.editor.setEditingShape(shape.id)
+  }
+
   override onResize(shape: IdeaCardShapeType, info: TLResizeInfo<IdeaCardShapeType>) {
     if (!shape?.props) return shape
     return resizeBox(shape, info)
@@ -236,7 +240,7 @@ function IdeaCardComponent({
           position: 'relative',
           ...duplicateBorderStyle,
         }}
-        onPointerDown={stopEventPropagation}
+        onPointerDown={isEditing ? stopEventPropagation : undefined}
       >
         {/* Embedding indicator */}
         {isEmbedding && (

@@ -36,9 +36,11 @@ export const useVectorIndex = create<VectorIndexState>((set, get) => ({
   isLoaded: false,
 
   addEntry: (entry: VectorEntry) => {
+    console.log('[VectorIndex] Adding entry:', entry.id, 'text:', entry.text.slice(0, 50))
     set((state) => {
       const newEntries = new Map(state.entries)
       newEntries.set(entry.id, entry)
+      console.log('[VectorIndex] Total entries after add:', newEntries.size)
       return { entries: newEntries }
     })
     // Auto-save after modification
@@ -46,9 +48,11 @@ export const useVectorIndex = create<VectorIndexState>((set, get) => ({
   },
 
   updateEntry: (entry: VectorEntry) => {
+    console.log('[VectorIndex] Updating entry:', entry.id, 'text:', entry.text.slice(0, 50))
     set((state) => {
       const newEntries = new Map(state.entries)
       newEntries.set(entry.id, entry)
+      console.log('[VectorIndex] Total entries after update:', newEntries.size)
       return { entries: newEntries }
     })
     // Auto-save after modification
@@ -90,8 +94,10 @@ export const useVectorIndex = create<VectorIndexState>((set, get) => ({
             text: entry.text,
           })
         }
+        console.log('[VectorIndex] Loaded', entries.size, 'entries from IndexedDB')
         set({ entries, isLoaded: true })
       } else {
+        console.log('[VectorIndex] No existing data, starting fresh')
         set({ isLoaded: true })
       }
     } catch (error) {
@@ -180,6 +186,7 @@ export function useVectorIndexSync(editor: Editor | null) {
             const meta = shape.meta as Partial<IdeaCardMeta> | undefined
             if (meta?.embedding && meta.embedding.length > 0) {
               const text = `${shape.props.title}\n${shape.props.content}`.trim()
+              console.log('[VectorIndexSync] Updating entry for card:', shape.id)
               updateEntry({
                 id: shape.id,
                 embedding: new Float32Array(meta.embedding),

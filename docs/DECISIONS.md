@@ -1,6 +1,103 @@
 # Technical Decisions
 
-## 2025-12-30 (Bug Fixes)
+## 2025-12-30 (Session 2 - UI Polish)
+
+### Decision: Clear Canvas button with confirmation
+
+**Context**: Users need a way to reset the canvas and start fresh without using URL parameters or DevTools.
+
+**Choice**: Floating button in top-right corner with modal confirmation dialog
+
+**Alternatives Considered**:
+- Menu item in tldraw's menu - Harder to discover
+- Keyboard shortcut only - Not intuitive for casual users
+- Auto-clear on certain conditions - Too risky
+
+**Rationale**:
+- Visible but unobtrusive placement
+- Red hover state clearly indicates destructive action
+- Confirmation prevents accidental data loss
+- Clears both canvas shapes AND vector index atomically
+
+---
+
+### Decision: Canvas/vector index sync on load
+
+**Context**: Vector index can become stale if the app crashes or closes unexpectedly, leading to false duplicate matches.
+
+**Choice**: Clear vector index when canvas is empty or corrupted on load
+
+**Alternatives Considered**:
+- Always rebuild index from shapes - Expensive for many cards
+- Trust both stores independently - Can cause false duplicates
+- Warn user about desync - Adds complexity
+
+**Rationale**:
+- Simple rule: empty canvas = empty index
+- Prevents ghost entries from causing self-matches
+- Automatic, no user intervention needed
+- Safe: only clears when canvas is definitively empty
+
+---
+
+### Decision: setTimeout(0) for duplicate check timing
+
+**Context**: Race condition between `useVectorIndexSync` and `useDuplicateCheck` - both listen to same store events.
+
+**Choice**: Defer duplicate check with `setTimeout(0)` to ensure vector index is updated first
+
+**Alternatives Considered**:
+- Explicit ordering via shared state - Complex
+- Single combined hook - Violates separation of concerns
+- Event-based coordination - Overkill
+
+**Rationale**:
+- setTimeout(0) defers to next microtask after all sync listeners complete
+- Zero-delay is sufficient (not a true async operation)
+- Minimal code change, no architectural impact
+- Works reliably across all browsers
+
+---
+
+### Decision: Explicit onDoubleClick handler for edit mode
+
+**Context**: tldraw's default double-click handling wasn't triggering edit mode for custom shapes.
+
+**Choice**: Override `onDoubleClick` in ShapeUtil and explicitly call `setEditingShape()`
+
+**Alternatives Considered**:
+- Rely on tldraw's default behavior - Wasn't working
+- Click handler with timer - Complex, unreliable
+- Always-editable mode - Bad UX
+
+**Rationale**:
+- Explicit is better than implicit
+- Works regardless of tldraw's internal state
+- Clear intent in code
+- Combined with conditional `stopEventPropagation` for proper event flow
+
+---
+
+### Decision: Separate overrides prop for tool UI
+
+**Context**: IdeaCard tool was registered but not appearing in toolbar.
+
+**Choice**: Use tldraw v4's `overrides` prop to define tool UI separately from behavior
+
+**Alternatives Considered**:
+- Hack tldraw internals - Fragile, version-dependent
+- Custom toolbar from scratch - Too much work
+- Wait for tldraw fix - Not a bug, by design
+
+**Rationale**:
+- Follows tldraw v4's intended architecture
+- Clean separation: behavior (tools) vs UI (overrides)
+- Allows customization of icon, label, keyboard shortcut
+- Future-proof as tldraw evolves
+
+---
+
+## 2025-12-30 (Session 1 - Bug Fixes)
 
 ### Decision: URL parameter for data reset
 
