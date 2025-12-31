@@ -4,7 +4,7 @@ import type { TLComponents, Editor, TLUiOverrides } from 'tldraw'
 import 'tldraw/tldraw.css'
 import { IdeaCardUtil } from './shapes'
 import { IdeaCardTool } from './tools'
-import { usePersistence, useEmbedding, useModelLoader, useDuplicateCheck, useHotkeys } from './hooks'
+import { usePersistence, useEmbedding, useModelLoader, useDuplicateCheck, useHotkeys, useAutoExport } from './hooks'
 import { useVectorIndexSync } from './store'
 import { SearchPanel, RelatedSidebar, QuickCapture, ChatPanel, ApiSettings, ToastContainer, useToast, ImportExportMenu } from './components'
 import { isElectron, electronAPI } from './lib/electron'
@@ -339,6 +339,9 @@ function App() {
 
   // Enable duplicate detection
   useDuplicateCheck(editor)
+
+  // Auto-export to MCP when in Electron
+  useAutoExport(editor)
 
   const handleMount = useCallback((editor: Editor) => {
     setEditor(editor)

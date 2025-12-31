@@ -13,6 +13,7 @@
 - [x] Created electron-builder configuration for Windows
 - [x] Updated App.tsx with Electron shortcut listeners
 - [x] Created tray icon (teal 16x16 PNG)
+- [x] Added auto-export hook for MCP server sync
 
 ### Files Created
 - `electron/main.ts` - Main process with BrowserWindow, tray, global shortcuts, IPC
@@ -22,12 +23,14 @@
 - `electron-builder.json5` - Packaging configuration for Windows/Mac/Linux
 - `src/lib/electron.ts` - Renderer-side API wrapper and helpers
 - `resources/tray-icon.png` - 16x16 teal system tray icon
+- `src/hooks/useAutoExport.ts` - Auto-export hook with 5s debounce
 
 ### Files Modified
 - `package.json` - Added electron scripts and dependencies
 - `tsconfig.node.json` - Added electron files to include
-- `src/App.tsx` - Added Electron shortcut listeners
+- `src/App.tsx` - Added Electron shortcut listeners, auto-export hook
 - `src/lib/index.ts` - Added electron exports
+- `src/hooks/index.ts` - Added useAutoExport export
 
 ### Architecture
 
@@ -80,6 +83,14 @@ npm install electron@28.0.0 --save-dev
 node_modules/electron/dist/electron.exe --version
 # Should show: v28.0.0
 ```
+
+### Auto-Export Feature
+- Watches canvas for IdeaCard changes
+- 5-second debounce to avoid excessive writes
+- Only runs in Electron (checks `window.electronAPI`)
+- Exports to `~/.semanticanvas/notes.json` via IPC
+- Logs `[AutoExport] Exported X notes to MCP` on success
+- Skips export if nothing changed (hash comparison)
 
 ### Notes
 - Electron v28.0.0 required for ES module compatibility
