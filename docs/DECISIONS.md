@@ -1,5 +1,88 @@
 # Technical Decisions
 
+## 2025-12-31 (Session 7 - UI Layout Fix & Windows Build)
+
+### Decision: Dedicated header bar instead of floating buttons
+
+**Context**: Custom UI buttons (hamburger menu, Search, Chat) were overlapping tldraw's native toolbar, covering important icons.
+
+**Choice**: Create a fixed 48px header bar above the canvas area
+
+**Alternatives Considered**:
+- Adjust button positioning to avoid toolbar - Fragile, toolbar layout may change
+- Hide tldraw's toolbar entirely - Loses useful functionality
+- Use tldraw's component override for toolbar - Complex, may break with updates
+
+**Rationale**:
+- Clear separation between custom controls and tldraw UI
+- Consistent header across all states (search open, chat open, etc.)
+- Layout uses flex-column, pushing canvas below header naturally
+- tldraw operates in its own contained area without interference
+
+---
+
+### Decision: Move ImportExportMenu logic into App.tsx
+
+**Context**: ImportExportMenu was a separate component with its own absolute positioning that conflicted with new header layout.
+
+**Choice**: Inline the import/export logic directly in App.tsx's HeaderToolbar
+
+**Alternatives Considered**:
+- Refactor ImportExportMenu to accept position props - Extra complexity
+- Keep ImportExportMenu and render in header - Component doing too little
+- Create new HeaderMenu component - Unnecessary abstraction
+
+**Rationale**:
+- Simpler code with fewer component boundaries
+- Header already manages menu open state
+- Import dialog can use App's showSuccess/showError directly
+- Removed one file from components/index.ts exports
+
+---
+
+### Decision: Disable Windows code signing in electron-builder
+
+**Context**: Windows build failed due to symlink permission errors when extracting winCodeSign tools.
+
+**Choice**: Add `"signAndEditExecutable": false` to win config in electron-builder.json5
+
+**Alternatives Considered**:
+- Run build as Administrator - User inconvenience, security concerns
+- Enable Windows Developer Mode - Requires system settings change
+- Use different code signing approach - Overkill for personal project
+
+**Rationale**:
+- Build completes successfully without Admin rights
+- App still works, just shows SmartScreen warning on first run
+- Can add proper signing later with certificate
+- Common workaround for open-source Electron apps
+
+---
+
+### Known Issue: winCodeSign Symlink Permission Error
+
+**Context**: electron-builder downloads winCodeSign tools that contain macOS symlinks, which Windows can't create without Admin/Developer Mode.
+
+**Symptom**: Build fails with "Cannot create symbolic link: A required privilege is not held by the client"
+
+**Root Cause**: The winCodeSign archive contains darwin-specific symlinks (libcrypto.dylib, libssl.dylib) that 7-Zip tries to create even on Windows.
+
+**Solution**: Add to electron-builder.json5:
+```json
+{
+  "win": {
+    "signAndEditExecutable": false
+  }
+}
+```
+
+**Prevention**: For signed releases, either:
+1. Build on a machine with Admin rights
+2. Enable Windows Developer Mode (Settings > For developers)
+3. Set up proper code signing certificate
+
+---
+
 ## 2025-12-31 (Session 6 - Electron Desktop App)
 
 ### Decision: electron-vite instead of plain Electron + Vite

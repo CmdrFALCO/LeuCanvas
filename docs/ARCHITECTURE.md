@@ -34,6 +34,9 @@ semanticanvas/
 │   │   ├── SearchPanel.tsx      # Semantic search sidebar
 │   │   ├── RelatedSidebar.tsx   # Related cards sidebar
 │   │   ├── QuickCapture.tsx     # Quick capture modal
+│   │   ├── ChatPanel.tsx        # AI chat sidebar
+│   │   ├── ApiSettings.tsx      # LLM API settings modal
+│   │   ├── Toast.tsx            # Toast notifications
 │   │   └── index.ts
 │   ├── types/               # TypeScript types
 │   │   └── index.ts             # Shared interfaces
@@ -320,18 +323,36 @@ function isValidSnapshot(snapshot): boolean {
 
 ### App Layout
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                         Fixed Full-screen                     │
-├───────────────┬──────────────────────────────┬───────────────┤
-│  SearchPanel  │                              │ RelatedSidebar│
-│   (toggle)    │        tldraw Canvas         │  (collapse)   │
-│   width:320   │           flex: 1            │   width:280   │
-│               │                              │               │
-│  - Input      │                              │  - Selected   │
-│  - Results    │                              │  - Top 5      │
-│               │                              │    related    │
-└───────────────┴──────────────────────────────┴───────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│ [☰] [Search]                                         [Chat]    │  <- HeaderToolbar (48px)
+├───────────────┬──────────────────────────────┬─────────────────┤
+│  SearchPanel  │                              │  RelatedSidebar │
+│   (toggle)    │        tldraw Canvas         │   (collapse)    │
+│   width:320   │     (with native toolbar)    │    width:280    │
+│               │           flex: 1            │                 │
+│  - Input      │                              │  - Selected     │
+│  - Results    │                              │  - Top 5        │
+│               │                              │    related      │
+└───────────────┴──────────────────────────────┴─────────────────┘
 ```
+
+### Layout Structure
+The app uses a two-level flex layout:
+1. **Outer container** (`flex-direction: column`):
+   - HeaderToolbar (fixed 48px height)
+   - Main content area (flex: 1)
+
+2. **Main content** (`flex-direction: row`):
+   - SearchPanel (320px, toggleable)
+   - tldraw Canvas (flex: 1)
+   - RelatedSidebar/ChatPanel (280px/400px)
+
+### HeaderToolbar Component
+- Fixed height: 48px
+- Background: #fafafa with bottom border
+- Left side: Hamburger menu (Import/Export dropdown), Search button
+- Right side: Chat toggle button
+- Keeps custom controls separate from tldraw's native UI
 
 ### Components
 

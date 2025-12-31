@@ -1,5 +1,53 @@
 # Daily Progress Tracker
 
+## 2025-12-31 - Session 7: UI Layout Fix & Windows Build
+
+### Completed
+- [x] Fixed UI layout - custom buttons no longer overlap tldraw's native toolbar
+- [x] Created dedicated header bar (48px) above the canvas area
+- [x] Moved hamburger menu, Search button, and Chat button to header
+- [x] Fixed Windows Electron build by disabling code signing
+- [x] Successfully built Windows installer (146.6 MB)
+
+### Files Modified
+- `src/App.tsx` - Major refactor: added HeaderToolbar component, restructured layout to flex-column
+- `src/components/index.ts` - Removed ImportExportMenu export (functionality moved to App.tsx)
+- `electron-builder.json5` - Added `signAndEditExecutable: false` to bypass Windows code signing
+
+### UI Layout Change
+
+**Before (problematic):**
+- Custom buttons (☰, Search, Chat) positioned absolutely over tldraw's toolbar
+- Buttons overlapped and covered tldraw's native icons
+
+**After (fixed):**
+```
+┌─────────────────────────────────────────────────────┐
+│ [☰] [Search]                              [Chat]   │  <- Custom header (48px)
+├────────┬────────────────────────────────┬──────────┤
+│        │                                │          │
+│ Search │    tldraw canvas               │ Related  │
+│ Panel  │    (with its own toolbar)      │ Cards /  │
+│        │                                │ Chat     │
+│        │                                │          │
+└────────┴────────────────────────────────┴──────────┘
+```
+
+### New Components in App.tsx
+- `HeaderToolbar` - Dedicated 48px header with menu, search, and chat buttons
+- `ImportDialog` - Moved from ImportExportMenu component
+
+### Build Output
+- **Installer**: `release/SemantiCanvas Setup 1.0.0.exe` (146.6 MB)
+- **Portable**: `release/win-unpacked/SemantiCanvas.exe` (176.7 MB)
+
+### Notes
+- Windows code signing disabled due to symlink permission issues
+- App is unsigned (SmartScreen may show warning on first run)
+- Default Electron icon used (no custom icon file)
+
+---
+
 ## 2025-12-31 - Session 6: Electron Desktop App
 
 ### Completed
