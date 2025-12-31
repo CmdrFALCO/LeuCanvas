@@ -4,7 +4,7 @@ import type { TLComponents, Editor, TLUiOverrides } from 'tldraw'
 import 'tldraw/tldraw.css'
 import { IdeaCardUtil } from './shapes'
 import { IdeaCardTool } from './tools'
-import { usePersistence, useEmbedding, useModelLoader, useDuplicateCheck, useHotkeys, useAutoExport } from './hooks'
+import { usePersistence, useEmbedding, useModelLoader, useDuplicateCheck, useHotkeys, useAutoExport, useImportPending } from './hooks'
 import { useVectorIndexSync } from './store'
 import { SearchPanel, RelatedSidebar, QuickCapture, ChatPanel, ApiSettings, ToastContainer, useToast } from './components'
 import { isElectron, electronAPI } from './lib/electron'
@@ -442,6 +442,8 @@ function HeaderToolbar({
   onToggleMenu,
   onExport,
   onImportClick,
+  onImportFromClaude,
+  showImportFromClaude,
 }: {
   isSearchOpen: boolean
   isChatOpen: boolean
@@ -451,6 +453,8 @@ function HeaderToolbar({
   onToggleMenu: () => void
   onExport: () => void
   onImportClick: () => void
+  onImportFromClaude: () => void
+  showImportFromClaude: boolean
 }) {
   return (
     <div
@@ -560,6 +564,36 @@ function HeaderToolbar({
                 </svg>
                 Import Canvas
               </button>
+              {showImportFromClaude && (
+                <>
+                  <div style={{ height: 1, backgroundColor: '#e5e5e5' }} />
+                  <button
+                    onClick={onImportFromClaude}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      fontSize: 14,
+                      color: '#333',
+                      textAlign: 'left',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f3f4f6')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                      <path d="M2 17l10 5 10-5" />
+                      <path d="M2 12l10 5 10-5" />
+                    </svg>
+                    Import from Claude
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -640,6 +674,12 @@ function App() {
   const { isLoading: isModelLoading, progress, status } = useModelLoader()
   const { toasts, dismissToast, showSuccess, showError } = useToast()
 
+  // Import pending notes from MCP server (Electron only)
+  const { importFromClaude } = useImportPending(editor, {
+    onSuccess: (count) => showSuccess(`Imported ${count} notes from Claude`),
+    onError: (error) => showError(`Failed to import from Claude: ${error}`),
+  })
+
   // Toggle search panel
   const toggleSearch = useCallback(() => {
     setIsSearchOpen((prev) => !prev)
@@ -705,6 +745,12 @@ function App() {
     setIsMenuOpen(false)
     fileInputRef.current?.click()
   }, [])
+
+  // Handle import from Claude (MCP pending notes)
+  const handleImportFromClaude = useCallback(async () => {
+    setIsMenuOpen(false)
+    await importFromClaude()
+  }, [importFromClaude])
 
   // Handle file selected
   const handleFileChange = useCallback(
@@ -865,6 +911,8 @@ function App() {
         onToggleMenu={toggleMenu}
         onExport={handleExport}
         onImportClick={handleImportClick}
+        onImportFromClaude={handleImportFromClaude}
+        showImportFromClaude={isElectron()}
       />
 
       {/* Hidden file input for import */}

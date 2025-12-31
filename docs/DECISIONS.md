@@ -1,5 +1,63 @@
 # Technical Decisions
 
+## 2025-12-31 (Session 8 - Import Pending Notes from MCP)
+
+### Decision: Auto-import on startup with manual trigger
+
+**Context**: MCP server writes pending notes to pending.json. Need to import these into the canvas.
+
+**Choice**: Auto-import on app startup, plus manual "Import from Claude" menu option
+
+**Alternatives Considered**:
+- Auto-import only - User can't trigger import while app is running
+- Manual only - User must remember to click menu
+- File watcher - Complex, requires additional Electron APIs
+
+**Rationale**:
+- Auto-import catches notes created before app launch
+- Manual option useful for notes created while app is running
+- Simple implementation using existing IPC handlers
+- 500ms delay on startup ensures editor is ready
+
+---
+
+### Decision: Grid layout for imported cards
+
+**Context**: Need to position multiple imported cards on canvas.
+
+**Choice**: 4-column grid centered on viewport, 280x180 cards with 20px gap
+
+**Alternatives Considered**:
+- Random positions - Cards may overlap or be hard to find
+- Single column list - Uses too much vertical space
+- Stacked at center - All cards overlap initially
+
+**Rationale**:
+- Grid is visually organized and easy to scan
+- 4 columns matches typical card viewing
+- Centered on viewport so user sees imports immediately
+- Select and zoom ensures visibility
+
+---
+
+### Decision: Show menu option only in Electron
+
+**Context**: "Import from Claude" requires file system access via IPC.
+
+**Choice**: Conditionally show menu item using `isElectron()` check
+
+**Alternatives Considered**:
+- Always show, disable in browser - Confusing UX
+- Always show, show error in browser - Annoying
+
+**Rationale**:
+- Clean UI without disabled items
+- Menu is context-appropriate
+- No confusion about feature availability
+- Browser users don't see unavailable features
+
+---
+
 ## 2025-12-31 (Session 7 - UI Layout Fix & Windows Build)
 
 ### Decision: Dedicated header bar instead of floating buttons

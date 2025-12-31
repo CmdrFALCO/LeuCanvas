@@ -18,6 +18,8 @@ semanticanvas/
 │   │   ├── useModelLoader.ts    # Model loading state
 │   │   ├── useDuplicateCheck.ts # Duplicate detection
 │   │   ├── useHotkeys.ts        # Keyboard shortcuts
+│   │   ├── useAutoExport.ts     # Auto-export to MCP
+│   │   ├── useImportPending.ts  # Import notes from MCP
 │   │   └── index.ts
 │   ├── workers/             # Web Workers
 │   │   └── embedding.worker.ts  # Embedding generation
@@ -466,15 +468,30 @@ Expose SemantiCanvas knowledge base to Claude Desktop, Claude Code, and other MC
 Data Flow:
 ┌─────────────────────┐         ┌─────────────────────┐
 │   SemantiCanvas     │         │    MCP Server       │
-│   (Browser App)     │         │    (Node.js)        │
+│   (Electron App)    │         │    (Node.js)        │
 ├─────────────────────┤         ├─────────────────────┤
 │                     │  write  │                     │
-│   IndexedDB ────────┼────────►│  notes.json         │
-│                     │         │       │             │
-│                     │  read   │       ▼             │
-│   pending.json ◄────┼─────────│  Vector Index       │
-│                     │         │  (in-memory Map)    │
+│  useAutoExport ─────┼────────►│  notes.json         │
+│  (5s debounce)      │         │       │             │
+│                     │         │       ▼             │
+│                     │  read   │  Vector Index       │
+│  useImportPending ◄─┼─────────│  (in-memory Map)    │
+│  (startup + menu)   │         │       │             │
+│                     │         │       ▼             │
+│                     │  write  │  create_note tool   │
+│  pending.json ◄─────┼─────────│       │             │
+│       │             │         │       ▼             │
+│       ▼             │         │  pending.json       │
+│  IdeaCard shapes    │         │                     │
 └─────────────────────┘         └─────────────────────┘
+
+Import Pending Flow:
+1. MCP server's create_note writes to ~/.semanticanvas/pending.json
+2. Electron app reads pending.json on startup via useImportPending hook
+3. Creates IdeaCard shapes in 4-column grid at viewport center
+4. Clears pending.json after successful import
+5. Shows toast: "Imported X notes from Claude"
+6. Embeddings auto-generated for new cards
 ```
 
 ### Project Structure

@@ -1,5 +1,62 @@
 # Daily Progress Tracker
 
+## 2025-12-31 - Session 8: Import Pending Notes from MCP
+
+### Completed
+- [x] Created useImportPending hook for importing MCP notes on startup
+- [x] Added "Import from Claude" menu option in HeaderToolbar (Electron only)
+- [x] Notes from pending.json are positioned in grid near viewport center
+- [x] Toast notification shows count of imported notes
+- [x] Embeddings are automatically generated for imported cards
+
+### Files Created
+- `src/hooks/useImportPending.ts` - Hook for importing pending notes from MCP server
+
+### Files Modified
+- `src/hooks/index.ts` - Added useImportPending export
+- `src/App.tsx` - Integrated useImportPending hook, added "Import from Claude" menu option
+
+### How It Works
+
+```
+MCP Server (Claude Desktop/Claude Code)
+        |
+        | create_note tool writes to
+        v
+~/.semanticanvas/pending.json
+        |
+        | Electron reads on startup or via menu
+        v
+SemantiCanvas App
+        |
+        | Creates IdeaCards at viewport center
+        | Clears pending.json after import
+        v
+Canvas with new cards
+```
+
+### Import Pending Flow
+1. On app startup (Electron only), `useImportPending` hook checks for pending notes
+2. Reads `~/.semanticanvas/pending.json` via IPC
+3. Creates IdeaCard shapes for each note in a grid layout
+4. Selects and zooms to imported cards
+5. Shows toast: "Imported X notes from Claude"
+6. pending.json is cleared after successful import
+7. Embeddings are automatically generated for new cards
+
+### Menu Option
+- "Import from Claude" appears in hamburger menu (Electron only)
+- Triggers manual import of pending notes
+- Useful if notes were added while app was running
+
+### Notes
+- Grid layout: 4 cards per row with 20px gap
+- Cards positioned at viewport center
+- Works with pending.json format from MCP server
+- Tags from MCP notes are preserved in card meta
+
+---
+
 ## 2025-12-31 - Session 7: UI Layout Fix & Windows Build
 
 ### Completed
