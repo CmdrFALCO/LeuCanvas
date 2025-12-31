@@ -6,7 +6,7 @@ import { IdeaCardUtil } from './shapes'
 import { IdeaCardTool } from './tools'
 import { usePersistence, useEmbedding, useModelLoader, useDuplicateCheck, useHotkeys } from './hooks'
 import { useVectorIndexSync } from './store'
-import { SearchPanel, RelatedSidebar, QuickCapture, ChatPanel, ApiSettings } from './components'
+import { SearchPanel, RelatedSidebar, QuickCapture, ChatPanel, ApiSettings, ToastContainer, useToast, ImportExportMenu } from './components'
 
 // Confirmation dialog component
 function ConfirmDialog({
@@ -257,6 +257,7 @@ function App() {
   const [isApiSettingsOpen, setIsApiSettingsOpen] = useState(false)
   const { isLoading: isPersistenceLoading, clearAll } = usePersistence(editor)
   const { isLoading: isModelLoading, progress, status } = useModelLoader()
+  const { toasts, dismissToast, showSuccess, showError } = useToast()
 
   // Toggle search panel
   const toggleSearch = useCallback(() => {
@@ -392,13 +393,21 @@ function App() {
             Chat
           </button>
         )}
+        {!showFullOverlay && (
+          <ImportExportMenu
+            editor={editor}
+            onClearAll={clearAll}
+            showSuccess={showSuccess}
+            showError={showError}
+          />
+        )}
         {!showFullOverlay && !isSearchOpen && (
           <button
             onClick={toggleSearch}
             style={{
               position: 'absolute',
-              top: 60,
-              left: 12,
+              top: 12,
+              left: 56,
               padding: '8px 12px',
               borderRadius: 6,
               border: '1px solid #e5e5e5',
@@ -459,6 +468,8 @@ function App() {
         isOpen={isApiSettingsOpen}
         onClose={() => setIsApiSettingsOpen(false)}
       />
+
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   )
 }
