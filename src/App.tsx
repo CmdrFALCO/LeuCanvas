@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { Tldraw, DefaultToolbar, TldrawUiMenuItem, useTools, DefaultToolbarContent } from 'tldraw'
 import type { TLComponents, Editor, TLUiOverrides } from 'tldraw'
 import 'tldraw/tldraw.css'
@@ -7,6 +7,7 @@ import { IdeaCardTool } from './tools'
 import { usePersistence, useEmbedding, useModelLoader, useDuplicateCheck, useHotkeys } from './hooks'
 import { useVectorIndexSync } from './store'
 import { SearchPanel, RelatedSidebar, QuickCapture, ChatPanel, ApiSettings, ToastContainer, useToast, ImportExportMenu } from './components'
+import { isElectron, electronAPI } from './lib/electron'
 
 // Confirmation dialog component
 function ConfirmDialog({
@@ -317,6 +318,24 @@ function App() {
 
   // Sync vector index with tldraw store
   useVectorIndexSync(editor)
+
+  // Listen for Electron global shortcuts
+  useEffect(() => {
+    if (!isElectron() || !electronAPI) return
+
+    const unsubQuickCapture = electronAPI.onQuickCapture(() => {
+      setIsQuickCaptureOpen(true)
+    })
+
+    const unsubSearch = electronAPI.onSearch(() => {
+      setIsSearchOpen(true)
+    })
+
+    return () => {
+      unsubQuickCapture()
+      unsubSearch()
+    }
+  }, [])
 
   // Enable duplicate detection
   useDuplicateCheck(editor)

@@ -7,3 +7,4 @@ export { exportCards, exportAndDownload, generateExportFilename, downloadExport 
 export type { ExportData, ExportedCard } from './export'
 export { validateImportData, parseImportFile, importCards, readFileAsText } from './import'
 export type { ImportMode, ImportResult, ValidationResult } from './import'
+export { isElectron, electronAPI, exportNotesForMCP, importPendingNotes } from './electron'

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "com.semanticanvas.app",
+  "productName": "SemantiCanvas",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "out/**/*",
+    "resources/**/*"
+  ],
+  "win": {
+    "target": ["nsis"],
+    "icon": "resources/icon.png"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true
+  },
+  "mac": {
+    "target": ["dmg"],
+    "icon": "resources/icon.png"
+  },
+  "linux": {
+    "target": ["AppImage"],
+    "icon": "resources/icon.png"
+  }
+}

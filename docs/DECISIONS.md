@@ -1,5 +1,139 @@
 # Technical Decisions
 
+## 2025-12-31 (Session 6 - Electron Desktop App)
+
+### Decision: electron-vite instead of plain Electron + Vite
+
+**Context**: Need to bundle React app with Electron main/preload processes.
+
+**Choice**: electron-vite package for unified build tooling
+
+**Alternatives Considered**:
+- Manual Vite + Electron configuration - Complex, error-prone
+- electron-forge - More opinionated, heavier
+- electron-builder only - No dev server integration
+
+**Rationale**:
+- Single config file for main, preload, and renderer
+- Hot reload for renderer in dev mode
+- Built-in externalization of Electron dependencies
+- Works with existing Vite React setup
+
+---
+
+### Decision: app.isPackaged for dev mode detection
+
+**Context**: Need to load dev server URL in development, file in production.
+
+**Choice**: Check `app.isPackaged` property
+
+**Alternatives Considered**:
+- `process.env.NODE_ENV` - Not reliably set in Electron
+- `process.env.VITE_DEV_SERVER_URL` - electron-vite doesn't set this
+- `process.env.ELECTRON_RENDERER_URL` - Only works with some configs
+
+**Rationale**:
+- Electron's built-in property, always accurate
+- Works regardless of build tool configuration
+- Simple boolean check, no string parsing
+- Works in all Electron versions
+
+---
+
+### Decision: Global shortcuts via Electron instead of browser
+
+**Context**: Quick Capture (Ctrl+Shift+N) and Search (Ctrl+Shift+K) should work globally.
+
+**Choice**: Use Electron's `globalShortcut.register()` in main process
+
+**Alternatives Considered**:
+- Browser keyboard events - Only work when window is focused
+- OS-level hook libraries - Platform-specific, complex
+- Always-on-top window - Annoying UX
+
+**Rationale**:
+- Works even when window is hidden/minimized
+- Cross-platform support built-in
+- Can show window and trigger IPC event in one action
+- Unregistered automatically on quit
+
+---
+
+### Decision: System tray with minimize-to-tray
+
+**Context**: App should be quickly accessible without taking taskbar space.
+
+**Choice**: System tray icon with context menu, window hides on close
+
+**Alternatives Considered**:
+- Always visible taskbar window - Takes space, not always needed
+- Close = quit - User loses quick access
+- Background service - Overkill for note app
+
+**Rationale**:
+- Standard desktop app pattern
+- Quick access via tray click or hotkeys
+- Quit explicitly via tray menu
+- Familiar UX for power users
+
+---
+
+### Decision: Preload script in separate output directory
+
+**Context**: electron-vite outputs main.js and preload.js to different directories.
+
+**Choice**: Accept default `out/preload/preload.js` path, use `../preload/preload.js` from main
+
+**Alternatives Considered**:
+- Output both to same directory - Requires config changes, may conflict
+- Embed preload code in main - Violates Electron security model
+- Use absolute paths - Breaks in different install locations
+
+**Rationale**:
+- Follows electron-vite conventions
+- Relative path works in dev and production
+- Clear separation of process code
+- Easy to understand build output structure
+
+---
+
+### Decision: Base64 fallback for tray icon
+
+**Context**: Tray icon file might not exist during development or if resources are missing.
+
+**Choice**: Check file existence, fall back to base64 data URL icon
+
+**Alternatives Considered**:
+- Require icon file always - Breaks if missing
+- Use Electron's default empty icon - Invisible, confusing
+- Skip tray if no icon - Loses functionality
+
+**Rationale**:
+- Graceful degradation
+- Always shows something visible in tray
+- Actual PNG file used when available
+- Minimal code overhead
+
+---
+
+### Known Issue: Electron Binary Caching on Windows
+
+**Context**: npm downloads Electron binaries to a global cache. Version mismatches cause runtime errors.
+
+**Symptom**: `electron.app.requestSingleInstanceLock()` returns `undefined`, console shows wrong Node.js version.
+
+**Root Cause**: `%LOCALAPPDATA%\electron\Cache\` contains old binary (e.g., v18.18.2) but package.json specifies newer version (v28.0.0). npm reuses cached binary without version check.
+
+**Solution**: Clear Electron cache and reinstall:
+```powershell
+Remove-Item -Recurse -Force "$env:LOCALAPPDATA\electron\Cache"
+npm uninstall electron && npm install electron@28.0.0 --save-dev
+```
+
+**Prevention**: Always verify with `node_modules/electron/dist/electron.exe --version` after install.
+
+---
+
 ## 2025-12-31 (Session 5 - MCP Server)
 
 ### Decision: File-based sync instead of direct IPC

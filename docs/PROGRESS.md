@@ -1,5 +1,95 @@
 # Daily Progress Tracker
 
+## 2025-12-31 - Session 6: Electron Desktop App
+
+### Completed
+- [x] Created Electron main process with window management
+- [x] Created preload script with IPC bridge for renderer
+- [x] Implemented global hotkeys (Ctrl+Shift+N, Ctrl+Shift+K)
+- [x] Added system tray with context menu and minimize-to-tray
+- [x] Single instance enforcement
+- [x] File system IPC for MCP server sync
+- [x] Created electron-vite configuration
+- [x] Created electron-builder configuration for Windows
+- [x] Updated App.tsx with Electron shortcut listeners
+- [x] Created tray icon (teal 16x16 PNG)
+
+### Files Created
+- `electron/main.ts` - Main process with BrowserWindow, tray, global shortcuts, IPC
+- `electron/preload.ts` - IPC bridge exposing electronAPI to renderer
+- `electron/electron-env.d.ts` - TypeScript declarations for Electron env
+- `electron.vite.config.ts` - electron-vite build configuration
+- `electron-builder.json5` - Packaging configuration for Windows/Mac/Linux
+- `src/lib/electron.ts` - Renderer-side API wrapper and helpers
+- `resources/tray-icon.png` - 16x16 teal system tray icon
+
+### Files Modified
+- `package.json` - Added electron scripts and dependencies
+- `tsconfig.node.json` - Added electron files to include
+- `src/App.tsx` - Added Electron shortcut listeners
+- `src/lib/index.ts` - Added electron exports
+
+### Architecture
+
+```
+Electron Main Process (electron/main.ts)
+        |
+        |-- BrowserWindow (loads renderer)
+        |-- Tray (system tray icon)
+        |-- globalShortcut (Ctrl+Shift+N, Ctrl+Shift+K)
+        |-- IPC handlers (fs:exportNotes, fs:importPending)
+        |
+        v
+Preload Script (electron/preload.ts)
+        |
+        |-- contextBridge.exposeInMainWorld('electronAPI', ...)
+        |
+        v
+Renderer Process (src/App.tsx)
+        |
+        |-- window.electronAPI.onQuickCapture()
+        |-- window.electronAPI.onSearch()
+        |-- window.electronAPI.exportNotes()
+        |-- window.electronAPI.importPending()
+```
+
+### Scripts
+- `npm run dev:electron` - Development mode with hot reload
+- `npm run build:electron` - Build for production
+- `npm run package:win` - Package Windows installer (.exe)
+
+### Known Issue: Electron Binary Version Mismatch (Windows)
+
+**Symptom**: `electron.app.requestSingleInstanceLock()` returns undefined, error shows wrong Node.js version (e.g., v18.18.2 instead of v28.0.0).
+
+**Cause**: Windows caches Electron binaries in `%LOCALAPPDATA%\electron\Cache\`. When upgrading Electron versions, npm may reuse the cached old binary even though package.json specifies a newer version.
+
+**Solution**:
+```powershell
+# Clear Electron cache
+Remove-Item -Recurse -Force "$env:LOCALAPPDATA\electron\Cache"
+
+# Reinstall electron
+cd C:\Projects\LeuCanvas-1
+npm uninstall electron
+npm install electron@28.0.0 --save-dev
+```
+
+**Verification**:
+```bash
+node_modules/electron/dist/electron.exe --version
+# Should show: v28.0.0
+```
+
+### Notes
+- Electron v28.0.0 required for ES module compatibility
+- Preload script output to `out/preload/preload.js` (path: `../preload/preload.js` from main)
+- Dev mode uses `app.isPackaged` check to load `http://localhost:5173`
+- Tray icon fallback creates icon from base64 data URL if file missing
+- Global shortcuts work even when window is hidden/minimized
+
+---
+
 ## 2025-12-31 - Session 5: MCP Server Integration
 
 ### Completed
