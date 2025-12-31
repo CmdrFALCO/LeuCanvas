@@ -1,5 +1,158 @@
 # Technical Decisions
 
+## 2025-12-31 (Session 5 - MCP Server)
+
+### Decision: File-based sync instead of direct IPC
+
+**Context**: Browser app uses IndexedDB, MCP server is Node.js process. Need to bridge data between them.
+
+**Choice**: JSON files in `~/.semanticanvas/` for data exchange
+
+**Alternatives Considered**:
+- WebSocket bridge - Requires browser app always running
+- Shared SQLite - Complex setup, browser compatibility issues
+- HTTP API from browser - Security concerns, CORS complexity
+
+**Rationale**:
+- Simple and robust for MVP
+- Works offline, no server dependencies
+- Browser exports on changes, MCP reads on startup
+- Separate files for read (notes.json) and write (pending.json) avoid conflicts
+- User can inspect/backup data easily
+
+---
+
+### Decision: Separate MCP package instead of monorepo integration
+
+**Context**: Where to place MCP server code relative to browser app.
+
+**Choice**: Separate `mcp-server/` directory with own package.json
+
+**Alternatives Considered**:
+- Same package with conditional imports - Complex, Node vs browser conflicts
+- Shared monorepo with workspace - Overkill for two packages
+- Completely separate repo - Harder to maintain together
+
+**Rationale**:
+- Clean separation of Node.js and browser code
+- Independent dependencies (MCP SDK, Transformers.js for Node)
+- Can build/deploy independently
+- Shared types could be extracted later if needed
+
+---
+
+### Decision: stdio transport instead of HTTP/SSE
+
+**Context**: How MCP server communicates with Claude Desktop.
+
+**Choice**: StdioServerTransport from @modelcontextprotocol/sdk
+
+**Alternatives Considered**:
+- HTTP transport - Requires port management, firewall issues
+- SSE transport - More complex setup
+
+**Rationale**:
+- Standard for Claude Desktop MCP servers
+- No network configuration needed
+- Process lifecycle managed by Claude Desktop
+- Simple JSON-RPC over stdin/stdout
+
+---
+
+### Decision: In-memory vector index with startup load
+
+**Context**: How to provide fast semantic search in MCP server.
+
+**Choice**: Load all embeddings into Map on startup
+
+**Alternatives Considered**:
+- Query from file each time - Too slow for interactive use
+- Persistent vector DB (e.g., ChromaDB) - Overkill, adds dependency
+- SQLite with vector extension - Complex setup
+
+**Rationale**:
+- Fast O(n) search for typical note counts (<1000)
+- Simple implementation with Map<string, number[]>
+- Reuses similarity.ts logic from browser app
+- Startup cost acceptable (3-10s including model load)
+
+---
+
+### Decision: Same embedding model as browser app
+
+**Context**: Which model to use for MCP server embeddings.
+
+**Choice**: Xenova/all-MiniLM-L6-v2 (384 dimensions, quantized)
+
+**Alternatives Considered**:
+- Different model for "better" results - Incompatible embeddings
+- OpenAI/Anthropic API embeddings - Violates local-first principle
+
+**Rationale**:
+- Exact same vectors as browser-generated embeddings
+- Can compare MCP-generated and browser-generated embeddings
+- No API keys or network required
+- Consistent similarity scores across both environments
+
+---
+
+### Decision: Pending.json for write-back instead of direct merge
+
+**Context**: How MCP-created notes get into browser app.
+
+**Choice**: Write new notes to separate pending.json file
+
+**Alternatives Considered**:
+- Append to notes.json - Risks corrupting browser export
+- Database with conflict resolution - Complex
+- Real-time sync - Requires always-on browser
+
+**Rationale**:
+- Safe: never modifies browser's export file
+- Browser can import pending notes on next load
+- Clear separation of concerns
+- Easy to implement merge logic in browser later
+
+---
+
+### Decision: Duplicate warning but still create note
+
+**Context**: What happens when MCP create_note detects a similar note.
+
+**Choice**: Create note anyway, return warning in response
+
+**Alternatives Considered**:
+- Block creation - Frustrating if similarity is coincidental
+- Require confirmation - MCP tools are single-request
+- Silent creation - User might not realize duplicate exists
+
+**Rationale**:
+- Informative: AI/user knows about potential duplicate
+- Non-blocking: note still gets created
+- Consistent with browser app behavior (warning, not prevention)
+- AI can decide to delete if truly duplicate
+
+---
+
+### Decision: Zod for input validation
+
+**Context**: How to validate MCP tool inputs.
+
+**Choice**: Zod schemas for all tool inputs
+
+**Alternatives Considered**:
+- Manual validation - Error-prone, verbose
+- JSON Schema directly - Less TypeScript integration
+- io-ts - More complex API
+
+**Rationale**:
+- MCP SDK has native Zod integration
+- Type inference from schemas
+- Clear error messages for invalid inputs
+- Consistent with modern TypeScript patterns
+
+---
+
 ## 2025-12-30 (Session 2 - UI Polish)
 
 ### Decision: Clear Canvas button with confirmation

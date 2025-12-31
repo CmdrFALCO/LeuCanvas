@@ -410,6 +410,110 @@ const CONFIG = {
                               └───────────────┘
 ```
 
+## MCP Server Integration (Phase 6)
+
+### Purpose
+Expose SemantiCanvas knowledge base to Claude Desktop, Claude Code, and other MCP-compatible clients for AI-assisted note management.
+
+### Architecture
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        MCP Server (Node.js)                          │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                       │
+│  ┌──────────────┐     ┌──────────────┐     ┌──────────────────────┐ │
+│  │  stdio       │────▶│  McpServer   │────▶│  Tool Handlers       │ │
+│  │  Transport   │     │  (@mcp/sdk)  │     │  (search, create...) │ │
+│  └──────────────┘     └──────────────┘     └──────────┬───────────┘ │
+│                                                        │             │
+│                              ┌─────────────────────────┘             │
+│                              ▼                                       │
+│                    ┌──────────────────┐                              │
+│                    │  Storage Layer   │                              │
+│                    │  (storage.ts)    │                              │
+│                    └────────┬─────────┘                              │
+│                              │                                       │
+│         ┌────────────────────┼────────────────────┐                 │
+│         ▼                    ▼                    ▼                 │
+│  ┌─────────────┐    ┌──────────────┐    ┌──────────────────┐       │
+│  │ notes.json  │    │ pending.json │    │ Embeddings       │       │
+│  │ (read)      │    │ (write)      │    │ (Transformers.js)│       │
+│  └─────────────┘    └──────────────┘    └──────────────────┘       │
+│                                                                       │
+└─────────────────────────────────────────────────────────────────────┘
+
+Data Flow:
+┌─────────────────────┐         ┌─────────────────────┐
+│   SemantiCanvas     │         │    MCP Server       │
+│   (Browser App)     │         │    (Node.js)        │
+├─────────────────────┤         ├─────────────────────┤
+│                     │  write  │                     │
+│   IndexedDB ────────┼────────►│  notes.json         │
+│                     │         │       │             │
+│                     │  read   │       ▼             │
+│   pending.json ◄────┼─────────│  Vector Index       │
+│                     │         │  (in-memory Map)    │
+└─────────────────────┘         └─────────────────────┘
+```
+
+### Project Structure
+```
+mcp-server/
+├── package.json           # Dependencies: @modelcontextprotocol/sdk, @xenova/transformers, zod
+├── tsconfig.json          # NodeNext module resolution
+├── src/
+│   ├── index.ts           # Entry point, MCP server setup, tool registration
+│   ├── types.ts           # Note, NotesExport, PendingNotes interfaces
+│   └── lib/
+│       ├── storage.ts     # JSON file I/O, embedding generation
+│       └── similarity.ts  # Cosine similarity, findTopK
+└── dist/                  # Compiled output
+```
+
+### MCP Tools
+
+| Tool | Input | Output |
+|------|-------|--------|
+| `search_notes` | query, limit?, minSimilarity? | results: {id, title, content, tags, similarity}[] |
+| `create_note` | title?, content, tags? | id, title, content, createdAt, duplicateWarning? |
+| `get_note` | id | Full note object |
+| `find_related` | noteId? or text?, limit? | relatedNotes: {id, title, content, similarity}[] |
+| `list_notes` | tags?, limit?, offset? | notes: {id, title, preview, tags, createdAt}[], total |
+
+### Configuration
+
+Data directory: `~/.semanticanvas/`
+- `notes.json` - Exported notes from browser app (read by MCP)
+- `pending.json` - Notes created via MCP (imported by browser)
+
+Claude Desktop config (`%APPDATA%\Claude\claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "semanticanvas": {
+      "command": "node",
+      "args": ["C:\\Projects\\LeuCanvas-1\\mcp-server\\dist\\index.js"]
+    }
+  }
+}
+```
+
+### Embedding Pipeline (MCP Server)
+
+Same model as browser app for consistency:
+- Model: `Xenova/all-MiniLM-L6-v2` (384 dimensions, quantized)
+- Loaded on server startup via `initEmbeddings()`
+- Notes without embeddings get them generated on load
+- New notes via `create_note` get embeddings immediately
+
+### Duplicate Detection
+
+On `create_note`:
+1. Generate embedding for `${title} ${content}`
+2. Find top-1 similar note via `findTopK()`
+3. If similarity > 0.92, include `duplicateWarning` in response
+4. Note is still created (user can decide to delete)
+
 ## Future Enhancements
 
 ### Potential Features
@@ -418,3 +522,5 @@ const CONFIG = {
 - Collaboration (WebSocket sync)
 - Card templates
 - Tags/categories with filtering
+- MCP Resources for direct note access
+- Auto-sync on browser app changes (file watcher)

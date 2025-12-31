@@ -1,5 +1,75 @@
 # Daily Progress Tracker
 
+## 2025-12-31 - Session 5: MCP Server Integration
+
+### Completed
+- [x] Created mcp-server package with npm dependencies
+- [x] Implemented storage layer with JSON file sync
+- [x] Integrated Transformers.js (Xenova/all-MiniLM-L6-v2) for embeddings
+- [x] Implemented 5 MCP tools: search_notes, create_note, get_note, find_related, list_notes
+- [x] Added duplicate detection on note creation (>92% similarity warning)
+- [x] Created test data at ~/.semanticanvas/notes.json
+- [x] Built and tested MCP server successfully
+- [x] Updated project README with MCP integration docs
+
+### Files Created
+- `mcp-server/package.json` - Package config with @modelcontextprotocol/sdk, @xenova/transformers, zod
+- `mcp-server/tsconfig.json` - TypeScript configuration for NodeNext modules
+- `mcp-server/src/types.ts` - Note, NotesExport, PendingNotes interfaces
+- `mcp-server/src/lib/similarity.ts` - cosineSimilarity and findTopK functions
+- `mcp-server/src/lib/storage.ts` - JSON file I/O, embeddings, pending notes
+- `mcp-server/src/index.ts` - MCP server with stdio transport and 5 tools
+- `mcp-server/README.md` - Setup and usage instructions
+
+### Files Modified
+- `README.md` - Complete rewrite with project overview and MCP integration docs
+
+### Architecture
+
+```
+Browser App (IndexedDB)
+        |
+        | export on changes
+        v
+~/.semanticanvas/notes.json  <-- MCP server reads on startup
+        |
+        | MCP creates new notes
+        v
+~/.semanticanvas/pending.json --> Browser imports on load
+```
+
+### MCP Tools Implemented
+
+| Tool | Description |
+|------|-------------|
+| `search_notes` | Semantic search with minSimilarity threshold |
+| `create_note` | Create note with duplicate detection |
+| `get_note` | Retrieve note by ID |
+| `find_related` | Find related notes by ID or text |
+| `list_notes` | List/filter notes by tags with pagination |
+
+### Configuration
+
+Claude Desktop (`%APPDATA%\Claude\claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "semanticanvas": {
+      "command": "node",
+      "args": ["C:\\Projects\\LeuCanvas-1\\mcp-server\\dist\\index.js"]
+    }
+  }
+}
+```
+
+### Notes
+- MCP server loads embedding model on startup (~3-10s first load)
+- Embeddings generated for notes missing them from JSON export
+- Pending notes written to separate file for browser app to import
+- Server runs via stdio transport for Claude Desktop compatibility
+
+---
+
 ## 2025-12-30 - Session 4: Phase 5 Quick Capture & Polish
 
 ### Completed

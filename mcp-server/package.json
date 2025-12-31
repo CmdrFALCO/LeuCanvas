@@ -1,0 +1,32 @@
+{
+  "name": "semanticanvas-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for SemantiCanvas knowledge base",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "semanticanvas-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts"
+  },
+  "keywords": [
+    "mcp",
+    "semanticanvas",
+    "knowledge-base",
+    "semantic-search"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.1",
+    "@xenova/transformers": "^2.17.2",
+    "zod": "^4.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
